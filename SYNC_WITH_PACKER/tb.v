@@ -72,62 +72,7 @@ module tb;
   //   send_uart_byte(8'h); //F0
   //   #(T*20*10);
 
-
-    //another byte
-    send_uart_byte(8'hF0); //F1
-    #(T*20*10);
-    //another byte
-    send_uart_byte(8'hF1); //F2
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hF2); //F3
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hF3); //F4
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hF4); //F5
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hF5); //F6
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hF6); //F7
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hF7); //F8
-    #(T*20*10);
-        //another byte
-    send_uart_byte(8'hF8); //F9
-    #(T*20*10);
-    //another byte
-    send_uart_byte(8'hF9); //F10
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hFA); //F11
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hFB); //F12
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hFC); //F13
-    #(T*20*10);   
-    //another byte
-    send_uart_byte(8'hFD); //F14
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hFE); //F15
-    #(T*20*10);    
-    //another byte
-    send_uart_byte(8'hFF); //F16
-    #(T*20*10);
-
-
-
-
-
-
-    //another 128-bits 
+    //first 128-bits 
         //another byte
     send_uart_byte(8'hA0); //F1
     #(T*20*10);
@@ -177,10 +122,108 @@ module tb;
     send_uart_byte(8'hAF); //F16
     #(T*20*10);
 
-    // send_uart_byte(8'hCC); //extra bit so we get last byte 
-    // #(T*20*10);
 
-    for(j = 0;j< 32;j=j+1) begin
+      //another 128-bits 
+      //another byte
+    send_uart_byte(8'hC0); //F1
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hC1); //F2
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hC2); //F3
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hC3); //F4
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hC4); //F5
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hC5); //F6
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hC6); //F7
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hC7); //F8
+    #(T*20*10);
+        //another byte
+    send_uart_byte(8'hC8); //F9
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hC9); //F10
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hCA); //F11
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hCB); //F12
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hCC); //F13
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hCD); //F14
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hCE); //F15
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hCF); //F16
+    #(T*20*10);
+
+
+   //another byte
+    send_uart_byte(8'hF0); //F1
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hF1); //F2
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hF2); //F3
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hF3); //F4
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hF4); //F5
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hF5); //F6
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hF6); //F7
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hF7); //F8
+    #(T*20*10);
+        //another byte
+    send_uart_byte(8'hF8); //F9
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hF9); //F10
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hFA); //F11
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hFB); //F12
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hFC); //F13
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hFD); //F14
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hFE); //F15
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hFF); //F16
+    #(T*20*10);
+
+    for(j = 0;j< 50;j=j+1) begin
         $display("Reading byte[%0d] %0H",j,DUT.SYNC_FIFO_DUT.mem[j]);
         #(T*20*10);
     end
