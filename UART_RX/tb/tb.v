@@ -1,0 +1,69 @@
+module tb;
+  
+  parameter TB_DATA_WIDTH = 8;
+  parameter TB_CLK_FREQ = 100_000_000;
+  parameter TB_BAUD_RATE = 115200;
+  
+  reg clk;
+  reg rx = 1;
+  wire [TB_DATA_WIDTH - 1:0]data_out;
+  wire done;
+  
+  //internal signals 
+  wire [7:0]data;
+  
+  rx #(.DATA_WIDTH(TB_DATA_WIDTH),.CLK_FREQ(TB_CLK_FREQ),.BAUD_RATE(TB_BAUD_RATE)) DUT(clk,rx,data_out,done);
+  
+  localparam integer T = TB_CLK_FREQ / TB_BAUD_RATE;
+  
+  initial begin
+    clk = 0;
+  end
+  
+  always #5 clk = ~clk;
+  
+  task send_uart_byte(input [TB_DATA_WIDTH - 1:0]data);
+    integer i;
+    begin
+      rx <= 0;	//start bit
+      #(T*10);
+      
+      for(i=0;i<TB_DATA_WIDTH;i=i+1) begin
+        rx <= data[i];
+        #(T*10);
+      end
+      
+      rx <= 1;
+      #(T*10);
+      rx <= 1;
+      #(T*10);
+    end
+  endtask
+      
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(0,tb);
+    
+    #(T*20*10);
+    $display("Sending first byte");
+    
+      //  send_uart_byte(8'b10101010); //AA
+      send_uart_byte(8'd88); //AA
+    
+	// Wait for done
+    #(T*20*10);
+
+	// another byte
+    // send_uart_byte(8'b01010101); //55
+      send_uart_byte(8'd55); //55
+    #(T*20*10);
+        
+	//another byte
+    // send_uart_byte(8'b00110101); //35
+    send_uart_byte(8'd35); //35
+    #(T*20*10);
+
+    $finish;
+  end
+  
+endmodule
