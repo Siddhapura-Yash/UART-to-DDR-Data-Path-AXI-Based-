@@ -123,6 +123,55 @@ module tb;
     #(T*20*10);
 
 
+        //another byte
+    send_uart_byte(8'hB0); //F1
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hB1); //F2
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hAB); //F3
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hB3); //F4
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hB4); //F5
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hB5); //F6
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hB6); //F7
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hB7); //F8
+    #(T*20*10);
+        //another byte
+    send_uart_byte(8'hB8); //F9
+    #(T*20*10);
+    //another byte
+    send_uart_byte(8'hB9); //F10
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hBA); //F11
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hBB); //F12
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hBC); //F13
+    #(T*20*10);   
+    //another byte
+    send_uart_byte(8'hBD); //F14
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hBE); //F15
+    #(T*20*10);    
+    //another byte
+    send_uart_byte(8'hBF); //F16
+    #(T*20*10);
+
       //another 128-bits 
       //another byte
     send_uart_byte(8'hC0); //F1

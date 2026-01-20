@@ -6,7 +6,7 @@ module top#(  parameter TB_DATA_WIDTH = 8,
               parameter TB_CLK_FREQ = 100_000_000,
               parameter TB_BAUD_RATE = 115200,
               parameter TB_DEPTH = 8,
-              parameter TB_WORD_WIDTH = 128) 
+              parameter TB_WORD_WIDTH = 256) 
               (input tb_clk,
                input tb_rx,
                input tb_ren);
