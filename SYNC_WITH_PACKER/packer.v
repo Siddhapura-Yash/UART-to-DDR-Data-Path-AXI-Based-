@@ -30,7 +30,7 @@ module packer#(parameter DATA_WIDTH = 8,
                                 // end
                         end
                 end
-                else if(byte_count == 7'd32) begin      //counter will be 32 incase of 256 pakcet
+                else if(byte_count == 7'd32) begin      //counter will be 32 incase of 256 pakcet [for 128 bits use 16]
                     packed_done <= 1'b1;
                     byte_count <= 0;
                     data_out <= {data_in, data_out[WORD_WIDTH-1:8]};
@@ -39,7 +39,7 @@ module packer#(parameter DATA_WIDTH = 8,
 
     // assign read_enable = (!check_empty && (byte_count != 5'd16));
     // assign read_enable = !check_empty && !word_fifo_full;
-    assign read_enable = !check_empty && !word_fifo_full && (byte_count != 7'd32);      //here count will also change incase of 256 bits
+    assign read_enable = !check_empty && !word_fifo_full && (byte_count != 7'd32);      //here count will also change incase of 256 bits [for 128 bits use 16]
 
     //for debugging purpose only
     assign packer_next = {data_in, internal_data_out[WORD_WIDTH-1:8]};
