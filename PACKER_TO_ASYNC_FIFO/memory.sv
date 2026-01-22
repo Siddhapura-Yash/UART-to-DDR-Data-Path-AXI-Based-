@@ -9,6 +9,9 @@ module memory #(parameter DATA_WIDTH = 4, DEPTH = 4, PTR_WIDTH = 3)
    output reg [DATA_WIDTH - 1 : 0]data_out);
   
   reg [DATA_WIDTH - 1 : 0]mem[0 : DEPTH-1]; 
+
+  //for debugging only
+  // wir [DATA_WIDTH-1 : 0]debug_out;
   
   //read operation
   always@(posedge rclk) begin

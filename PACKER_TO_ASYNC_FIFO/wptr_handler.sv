@@ -6,18 +6,18 @@ module wptr_handler #(parameter PTR_WIDTH = 3)
    output wfull);
   
   
-  reg [PTR_WIDTH : 0]b_wptr_next = 0;
-  reg [PTR_WIDTH : 0]g_wptr_next = 0;
+  reg [PTR_WIDTH : 0]b_wptr_next;
+  reg [PTR_WIDTH : 0]g_wptr_next;
   
   reg wrap_around;
   // wire wfull;
   
-  // assign b_wptr_next = b_wptr + (w_en & !full);
-  // assign g_wptr_next = (b_wptr_next	 >> 1) ^ b_wptr_next;
-  always@(*) begin
-  b_wptr_next = b_wptr + (w_en & !full);
-  g_wptr_next = (b_wptr_next	 >> 1) ^ b_wptr_next;
-  end
+  assign b_wptr_next = b_wptr + (w_en & !full);
+  assign g_wptr_next = (b_wptr_next	 >> 1) ^ b_wptr_next;
+  // always@(*) begin
+  // b_wptr_next <= b_wptr + (w_en & !full);
+  // g_wptr_next <= (b_wptr_next	 >> 1) ^ b_wptr_next;
+  // end
   
   always@(posedge wclk or negedge wrst) begin
     if(!wrst) begin

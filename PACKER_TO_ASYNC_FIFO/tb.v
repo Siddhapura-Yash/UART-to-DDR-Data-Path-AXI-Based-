@@ -1,4 +1,6 @@
 // --------------------------------------------working properly---------------------------------------
+`timescale 1ns/1ps
+
 `include "top.v"
 
 module tb;
@@ -7,8 +9,11 @@ module tb;
   parameter TB_CLK_FREQ = 100_000_000;
   parameter TB_BAUD_RATE = 115200;
   parameter TB_DEPTH = 1024;
-  
+
+  localparam real HALF_PERIOD_NS = 1e9 / (2 * TB_CLK_FREQ);
+
   reg clk;
+  reg rst;
   reg read_clk_async;
   reg rx = 1;
   reg r_en = 0;
@@ -21,7 +26,7 @@ module tb;
   //internal signals 
   wire [7:0]data;
   
-  top #(.TB_DATA_WIDTH(TB_DATA_WIDTH),.TB_CLK_FREQ(TB_CLK_FREQ),.TB_BAUD_RATE(TB_BAUD_RATE),.TB_DEPTH(TB_DEPTH)) DUT(clk,rx,r_en,read_clk_async);
+  top #(.TB_DATA_WIDTH(TB_DATA_WIDTH),.TB_CLK_FREQ(TB_CLK_FREQ),.TB_BAUD_RATE(TB_BAUD_RATE),.TB_DEPTH(TB_DEPTH)) DUT(clk,rst,rx,r_en,read_clk_async);
   
   localparam integer T = TB_CLK_FREQ / TB_BAUD_RATE;
   
@@ -30,8 +35,19 @@ module tb;
     read_clk_async = 0;
   end
   
-  always #5 clk = ~clk;
-  always #5 read_clk_async = ~read_clk_async;
+  // always #10 clk = ~clk;\
+integer c = 0;
+initial clk = 0;
+
+  always #1 begin
+    c = c + 1;
+    if (c == HALF_PERIOD_NS) begin
+      clk = ~clk;
+      c = 0;
+    end
+  end
+
+  always #3 read_clk_async = ~read_clk_async;
   
   task send_uart_byte(input [TB_DATA_WIDTH - 1:0]data);
     integer i;
@@ -78,6 +94,10 @@ module tb;
   //   send_uart_byte(8'h); //F0
   //   #(T*20*10);
 
+
+    repeat(5) @(posedge clk);  rst <= 1'b0;
+    repeat(10) @(posedge clk);  rst <= 1'b1;
+
     //first 128-bits 
     //sending data through loopo
     // hA0
@@ -122,10 +142,21 @@ module tb;
       #(T*20*10);
     end
 
+
+    //long delay before reading
+    #(T*200*10);
+
+    r_en = 1;
+    #(T*200*10);
+    r_en = 0;
+
+    r_en = 1;
+    #(T*200*10);
+    r_en = 0;
+
     r_en = 1;
     #(T*20*10);
     r_en = 0;
-
 
     for(j = 0;j< 5;j=j+1) begin
         $display("reading byte [%0d] %0H",j,DUT.ASYNC_DUT.mem.mem[0]);
