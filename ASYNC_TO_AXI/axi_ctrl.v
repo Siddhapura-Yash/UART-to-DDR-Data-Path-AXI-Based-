@@ -6,9 +6,9 @@ input   rstn,
 //address channels signals we'll provide signals
 input   [511:0]     INADDR,			//external address feeded 
 input               TRIGGER,		//start signal 
-input	[31:0]	    LOOP_N,			//counter for loop
-input   [3:0]       PATTERN_NUMBER,	
-input   [15:0]      IN_PATTERN,		//operation type 0 = read 1 = write 
+// input	[31:0]	    LOOP_N,			//counter for loop
+// input   [3:0]       PATTERN_NUMBER,	
+// input   [15:0]      IN_PATTERN,		//operation type 0 = read 1 = write 
 
 
 //write ADDRESS channel signals
@@ -36,12 +36,15 @@ input   [255:0] 	DDR_RDATA_0,	//read data from ddr
 input			DDR_RLAST_0,		//last beat of read burst
 input			DDR_RVALID_0,		//high means read data is valid
 output  reg		DDR_RREADY_0,		//master ready to accepet read data
+
+
+
+//Write response channel signals
 input   [1:0] 		DDR_RRESP_0,	//read response 
 									//00 → OKAY
 									//01 → EXOKAY
 									//10 → SLVERR
 									//11 → DECERR
-
 //write resnose channel signals 
 //here slave confirms write completion
 //write is not complete untill BVALID

@@ -1,3 +1,4 @@
+// in this module we are putting data before one state and making valid signal high in actual state so data capture and valid on coreect state
 
 `timescale 1ps/1ps
 module memory_checker (
@@ -71,6 +72,7 @@ reg [8:0] write_cnt, read_cnt;
 reg [255:0] rdata_store;
 reg wburst_done, rburst_done, write_done, read_done;
 
+//start condition 
 always @(posedge axi_clk or negedge rstn) begin
 	if (!rstn) begin
 		start_sync <= 2'b00;
@@ -80,6 +82,7 @@ always @(posedge axi_clk or negedge rstn) begin
 	end
 end
 
+//state reset logic
 always @(posedge axi_clk or negedge rstn) begin
  	if (!rstn) begin
 	states <= IDLE;
@@ -88,30 +91,41 @@ always @(posedge axi_clk or negedge rstn) begin
 	end
 end
 
+//next state logic
 always @(states or start_sync[1] or write_cnt or rburst_done or write_done or read_done or bvalid_done or aready) begin
 	case(states) 
 	IDLE 	   : if (start_sync[1]) 			nstates = WRITE_ADDR;
-	             else					nstates = IDLE;
-	WRITE_ADDR : if (aready)				nstates = PRE_WRITE;
-		     else					nstates = WRITE_ADDR;
-	PRE_WRITE  : 						nstates = WRITE;
+	             else							nstates = IDLE;
+	
+	WRITE_ADDR : if (aready)					nstates = PRE_WRITE;
+		     	else							nstates = WRITE_ADDR;
+	
+	PRE_WRITE  : 								nstates = WRITE;
+	
 	WRITE	   : if (write_cnt == 9'd0)			nstates = POST_WRITE;
-		     else		 			nstates = WRITE;
-	POST_WRITE : if (write_done & bvalid_done) 		nstates = READ_ADDR;
-		     else if (bvalid_done)			nstates = WRITE_ADDR;
-		     else					nstates = POST_WRITE;
-	READ_ADDR  : if (aready) 				nstates = PRE_READ;
-		     else					nstates = READ_ADDR;
-	PRE_READ   :						nstates = READ_COMPARE;
+		    	else		 					nstates = WRITE;
+	
+	POST_WRITE : if (write_done & bvalid_done) 	nstates = READ_ADDR;
+		    	else if (bvalid_done)			nstates = WRITE_ADDR;
+		     	else							nstates = POST_WRITE;
+	
+	READ_ADDR  : if (aready) 					nstates = PRE_READ;
+		    	else							nstates = READ_ADDR;
+	
+	PRE_READ   :								nstates = READ_COMPARE;
+	
 	READ_COMPARE  : if (rburst_done) 			nstates = POST_READ;
-			else					nstates = READ_COMPARE;
+				else							nstates = READ_COMPARE;
+	
 	POST_READ  :	if (read_done) 				nstates = DONE;
-			else					nstates = READ_ADDR;
-	DONE	   : 						nstates = DONE;
-	default							nstates = IDLE;
+				else							nstates = READ_ADDR;
+	
+	DONE	   : 								nstates = DONE;
+	default										nstates = IDLE;
 	endcase
 end
 
+//main fsm logic starts
 always @(posedge axi_clk or negedge rstn) begin
 	if (!rstn) begin
 		aaddr <= START_ADDR;
@@ -149,10 +163,10 @@ always @(posedge axi_clk or negedge rstn) begin
                 	wburst_done <= 1'b0;
                 	wlast <= 1'b0;
                 	bready <= 1'b0;
-			rready <= 1'b0;
-			bvalid_done <= 1'b0;
-			fail <= 1'b0;
-			done <= 1'b0;
+					rready <= 1'b0;
+					bvalid_done <= 1'b0;
+					fail <= 1'b0;
+					done <= 1'b0;
 		end
 		if (states == WRITE_ADDR) begin
 			avalid <= 1'b1;
