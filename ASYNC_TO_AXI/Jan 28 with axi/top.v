@@ -73,12 +73,15 @@ module top#(  parameter TB_DATA_WIDTH = 8,
                 
                 
                 output reg led,
-                output ddr_start    //led to show when to start operation
+                output ddr_start,    //led to show when to start operation
+                output TX_PIN
 
                           );
 
 wire tb_clk;
 assign tb_clk = axi_clk;
+
+reg axi_start_reg;
 
 
   //UART signals
@@ -111,6 +114,39 @@ assign tb_clk = axi_clk;
     wire	[0:0]w_pll_rstni;
     wire	[3:0]w_axi0_states;
     wire	[3:0]w_axi1_states;
+    
+    
+    //axi receiving buffer_full
+    wire receiving_full;
+    wire receiving_byte_count;
+    
+    
+    //receive sync fifo signals
+    wire receive_sync_enable;
+    wire receive_sync_r_enable;
+    
+    wire [TB_WORD_WIDTH-1:0]receive_sync_out;
+    wire receive_sync_full;
+    wire receive_sync_empty; 
+    
+    assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
+    
+    //depacker signals
+    wire depacker_w_enable;
+    wire [TB_DATA_WIDTH-1:0]depacker_out;
+    wire check_byte_full;    
+    wire uart_byte_empty;    
+    
+    //signals which are used between uart byte fifo and uart tx
+    wire [TB_DATA_WIDTH-1 : 0]uart_byte_fifo_out;
+    wire uart_tx_active;
+    wire uart_tx_done;
+    wire byte_enable;
+    assign byte_enable = !uart_tx_active && uart_tx_done && !uart_byte_empty;
+    wire byte_valid;
+    assign byte_valid = byte_enable;
+
+    
 
     wire ddr_rstn_seq, ddr_cfg_seq_rst, ddr_cfg_seq_start;
 
@@ -190,8 +226,8 @@ assign tb_clk = axi_clk;
 
   axi AXI_DUT(.axi_clk(axi_clk),
               .rstn(check_rstn),
-              .start(axi_start),
-              .data_in(word_out),
+              .start(axi_start_reg),
+              .data_in(async_out),
               .check_empty(async_empty),
               .read_enable(r_enable),
               .aid(aid),
@@ -227,7 +263,45 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
           .ddr_cfg_seq_start	(ddr_cfg_seq_start),
           .ddr_init_done(axi_start)
 );
+                                                                        
+  sync_fifo #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH*5)) RECEIVE_SYNC_FIFO_DUT (.clk(axi_clk),
+                                                                          .rst(check_rstn),
+                                                                          .r_en(receive_sync_r_enable),
+                                                                          .w_en(receive_sync_enable),
+                                                                          .data_in(rdata),
+                                                                          .data_out(receive_sync_out),
+                                                                          .full(receive_sync_full),
+                                                                          .empty(receive_sync_empty));
+                                                                          
+   depacker #(.WORD_WIDTH(TB_WORD_WIDTH)) DEPACKER_DUT(.clk(axi_clk),
+                                                       .rst(check_rstn),
+                                                       .data_in(receive_sync_out),
+                                                       .check_empty(receive_sync_empty),
+                                                       .byte_full(check_byte_full),
+                                                       .read_enable(receive_sync_r_enable),
+                                                       .data_out(depacker_out),
+                                                       .write_enable(depacker_w_enable));
+
+
+  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*8)) UART_BYTE_FIFO(.clk(axi_clk),
+                                                                            .rst(check_rstn),
+                                                                            .r_en(byte_enable),
+                                                                            .w_en(depacker_w_enable),
+                                                                            .data_in(depacker_out),
+                                                                            .data_out(uart_byte_fifo_out),
+                                                                            .full(check_byte_full),
+                                                                            .empty(uart_byte_empty));
+                                                                            
+              
+  uart_tx UART_TX_DUT(.i_Clock(axi_clk),
+           .i_Tx_DV(byte_valid),
+           .i_Tx_Byte(uart_byte_fifo_out),
+           .o_Tx_Active(uart_tx_active),
+           .o_Tx_Serial( ),
+           .o_Tx_Done(uart_tx_done));
+                             
 
 assign ddr_start = axi_start;
+assign axi_start_reg = word_packed_done;
 
 endmodule

@@ -56,8 +56,23 @@ module axi(
 );
 
 //will fetch data from word fifo
-assign read_enable = (!check_empty && wready) == 1? 1 : 0;
+assign read_enable = (!check_empty && states == 4'b0011 && wready) == 1? 1 : 0;
 
+reg [255:0]async_data;
+
+always@(posedge axi_clk or negedge rstn) begin
+    if(!rstn) begin
+        async_data <= 'b0;
+    end
+    else begin
+        if(read_enable) begin
+            async_data <= data_in;
+        end
+        else begin
+            async_data <= async_data;
+        end
+    end
+end
 
 
 assign aid = 8'h00;
@@ -197,13 +212,16 @@ always @(posedge axi_clk or negedge rstn) begin
 			avalid <= 1'b0;
 			atype <= 1'b0;
 			wvalid <= 1'b1;
-			wdata <= data_in;
+			wdata <= "Data is send from PRE_WRITE state";   //data doesn't send from this module
 			bready <= 1'b1;
 			write_cnt <= write_cnt - 1;
             end
         if (states == WRITE) begin
-                if (wready == 1'b1 && read_enable == 1'b1) begin
-                    wdata <= data_in;
+              //  if (wready == 1'b1 && read_enable == 1'b0) begin
+               if (wready == 1'b1) begin
+                    //wdata <= "DAta is send from WRITE state";
+                    
+                   wdata <= async_data;
                     if (write_cnt == 9'd0) begin
                     wburst_done <= 1'b1;
                     wlast <= 1'b0;

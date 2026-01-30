@@ -41,9 +41,11 @@ module packer#(parameter DATA_WIDTH = 8,
                 else if(byte_count == 7'd32) begin      //counter will be 32 incase of 256 pakcet [for 128 bits use 16]
                     packed_done <= 1'b1;
                     //data_out <= {data_in, data_out[WORD_WIDTH-1:8]};
+                    data_out <= {data_out[WORD_WIDTH-9:0], data_in};
+                    byte_count <= byte_count + 1'b1;
                 end
                 else if(byte_count == 7'd33) begin  
-                    byte_count <= 0;
+                    byte_count <= 'b0;
                     packed_done <= 1'b0;
                 end
     end
