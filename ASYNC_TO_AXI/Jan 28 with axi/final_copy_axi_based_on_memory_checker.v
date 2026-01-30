@@ -56,7 +56,7 @@ module axi(
 );
 
 //will fetch data from word fifo
-assign read_enable = !check_empty && wready;
+assign read_enable = (!check_empty && wready) == 1? 1 : 0;
 
 
 
@@ -202,7 +202,7 @@ always @(posedge axi_clk or negedge rstn) begin
 			write_cnt <= write_cnt - 1;
             end
         if (states == WRITE) begin
-                if (wready == 1'b1 && read_enable) begin
+                if (wready == 1'b1 && read_enable == 1'b1) begin
                     wdata <= data_in;
                     if (write_cnt == 9'd0) begin
                     wburst_done <= 1'b1;

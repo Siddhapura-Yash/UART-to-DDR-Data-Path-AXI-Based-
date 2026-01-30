@@ -2,7 +2,7 @@
 
 
 module top#(  parameter TB_DATA_WIDTH = 8,
-              parameter TB_CLK_FREQ = 100_000_000,  //100 MHz
+              parameter TB_CLK_FREQ = 80_000_000,  //100 MHz
               parameter TB_BAUD_RATE = 115200,
               parameter TB_DEPTH = 8,
               parameter TB_WORD_WIDTH = 256) 
@@ -15,11 +15,11 @@ module top#(  parameter TB_DATA_WIDTH = 8,
                 //global signals
                 input axi_clk,
                 //input rstn,
-                input rst,
+               // input rst,
 
 //axi signals
-                //input ddr_rstn,
-               // input check_rstn,
+                input ddr_rstn,
+                input check_rstn,
 
                 //input start,
 
@@ -72,21 +72,14 @@ module top#(  parameter TB_DATA_WIDTH = 8,
                 input axi_clk_LOCKED,
                 
                 
-                output reg led
+                output reg led,
+                output ddr_start    //led to show when to start operation
 
                           );
-
-//internal reset signals
-wire tb_rst;
-wire check_rstn;
-wire ddr_rstn;
 
 wire tb_clk;
 assign tb_clk = axi_clk;
 
-assign tb_rst = rst;
-assign check_rstn = rst;
-assign ddr_rstn = rst;
 
   //UART signals
   wire [TB_DATA_WIDTH - 1 : 0]rx_result;
@@ -119,7 +112,7 @@ assign ddr_rstn = rst;
     wire	[3:0]w_axi0_states;
     wire	[3:0]w_axi1_states;
 
-    wire ddr_rstn,ddr_rstn_seq, ddr_cfg_seq_rst, ddr_cfg_seq_start;
+    wire ddr_rstn_seq, ddr_cfg_seq_rst, ddr_cfg_seq_start;
 
     assign ddr_inst1_RSTN = ddr_rstn_seq;
     assign ddr_inst1_CFG_SEQ_RST = ddr_cfg_seq_rst;
@@ -129,9 +122,10 @@ assign ddr_rstn = rst;
     //assign br1_pll_rstn = pll_rstni;
     assign br1_pll_rstn = 1'b1;
 
-    wire pll_locked;
-    
-    assign pll_locked = br0_pll_locked & tb_clk_LOCKED & axi_clk_LOCKED;
+    //wire pll_locked;
+    //assign pll_locked = ddr_cfg_seq_start;
+    wire axi_start;
+    //assign pll_locked = br0_pll_locked & axi_clk_LOCKED;
 
     wire fail_0, done_0, fail_1, done_1;
     assign pass = !(fail_0 | fail_1);
@@ -141,14 +135,15 @@ assign ddr_rstn = rst;
    // reg led_value = 0;
    
     
-    always@(posedge axi_clk or negedge rst) begin
-        if(!rst) begin
+    always@(posedge axi_clk or negedge check_rstn) begin
+        if(!check_rstn) begin
             count <= 'b0;
+            led <= 'b0;
         end
         else begin
             if(count > 35'd12500000) begin
                 led <= ~led;
-                count <= 0;
+                count <= 'b0;
                // led_value <= ~led_value;
             end
             else begin
@@ -156,18 +151,16 @@ assign ddr_rstn = rst;
             end
         end
     end
-      
-  
     
-  rx #(.DATA_WIDTH(TB_DATA_WIDTH),.CLK_FREQ(TB_CLK_FREQ),.BAUD_RATE(TB_BAUD_RATE)) RX_DUT ( .clk(tb_clk),
-                                                                                            .rx(tb_rx),
-                                                                                            .result(rx_result),
-                                                                                            .done(rx_done));
+  rx RX_DUT ( .i_Clock(axi_clk),
+                                                                                            .i_Rx_Serial(tb_rx),
+                                                                                            .o_Rx_Byte(rx_result),
+                                                                                            .o_Rx_DV(rx_done));
                                                                                             
      // assign led = (rx_done) ? 1'b1 : 1'b0;
   
-  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH)) SYNC_FIFO_DUT (.clk(tb_clk),
-                                                                          .rst(tb_rst),
+  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH)) SYNC_FIFO_DUT (.clk(axi_clk),
+                                                                          .rst(check_rstn),
                                                                           .r_en(packer_ren),
                                                                           .w_en(tb_wen),
                                                                           .data_in(rx_result),
@@ -176,17 +169,18 @@ assign ddr_rstn = rst;
                                                                           .empty(sync_empty));
   
   packer #(.DATA_WIDTH(TB_DATA_WIDTH),.WORD_WIDTH(TB_WORD_WIDTH)) PACKER_DUT (.data_in(sync_out),
-                                                                              .clk(tb_clk),
+                                                                              .rst(check_rstn),
+                                                                              .clk(axi_clk),
                                                                               .check_empty(sync_empty),
                                                                               .word_fifo_full(word_full),
                                                                               .data_out(word_out),
                                                                               .packed_done(word_packed_done),
                                                                               .read_enable(packer_ren));
 
-  async_top #(.DEPTH(TB_DEPTH),.DATA_WIDTH(TB_WORD_WIDTH)) ASYNC_DUT (  .wclk(tb_clk),
-                                                                        .wrst(tb_rst),
+  async_top #(.DEPTH(TB_DEPTH),.DATA_WIDTH(TB_WORD_WIDTH)) ASYNC_DUT (  .wclk(axi_clk),
+                                                                        .wrst(check_rstn),
                                                                         .rclk(axi_clk),
-                                                                        .rrst(tb_rst),
+                                                                        .rrst(check_rstn),
                                                                         .w_en(word_packed_done),
                                                                         .r_en(r_enable),
                                                                         .data_in(word_out),
@@ -196,7 +190,7 @@ assign ddr_rstn = rst;
 
   axi AXI_DUT(.axi_clk(axi_clk),
               .rstn(check_rstn),
-              .start(pll_locked),
+              .start(axi_start),
               .data_in(word_out),
               .check_empty(async_empty),
               .read_enable(r_enable),
@@ -230,7 +224,10 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
           .clk		(axi_clk),
           .ddr_rstn		(ddr_rstn_seq),
           .ddr_cfg_seq_rst	(ddr_cfg_seq_rst),
-          .ddr_cfg_seq_start	(ddr_cfg_seq_start)
+          .ddr_cfg_seq_start	(ddr_cfg_seq_start),
+          .ddr_init_done(axi_start)
 );
+
+assign ddr_start = axi_start;
 
 endmodule
