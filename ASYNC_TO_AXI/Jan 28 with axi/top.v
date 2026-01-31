@@ -129,8 +129,9 @@ reg axi_start_reg;
     wire receive_sync_full;
     wire receive_sync_empty; 
     
-    assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
-    
+    //assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
+    assign receive_sync_enable = (rvalid && rready && !receive_sync_full);
+
     //depacker signals
     wire depacker_w_enable;
     wire [TB_DATA_WIDTH-1:0]depacker_out;
@@ -189,9 +190,9 @@ reg axi_start_reg;
     end
     
   rx RX_DUT ( .i_Clock(axi_clk),
-                                                                                            .i_Rx_Serial(tb_rx),
-                                                                                            .o_Rx_Byte(rx_result),
-                                                                                            .o_Rx_DV(rx_done));
+              .i_Rx_Serial(tb_rx),
+              .o_Rx_Byte(rx_result),
+              .o_Rx_DV(rx_done));
                                                                                             
      // assign led = (rx_done) ? 1'b1 : 1'b0;
   
@@ -213,7 +214,7 @@ reg axi_start_reg;
                                                                               .packed_done(word_packed_done),
                                                                               .read_enable(packer_ren));
 
-  async_top #(.DEPTH(TB_DEPTH),.DATA_WIDTH(TB_WORD_WIDTH)) ASYNC_DUT (  .wclk(axi_clk),
+ /*  async_top #(.DEPTH(TB_DEPTH),.DATA_WIDTH(TB_WORD_WIDTH)) ASYNC_DUT (  .wclk(axi_clk),
                                                                         .wrst(check_rstn),
                                                                         .rclk(axi_clk),
                                                                         .rrst(check_rstn),
@@ -223,6 +224,16 @@ reg axi_start_reg;
                                                                         .data_out(async_out),
                                                                         .full(word_full),
                                                                         .empty(async_empty));
+ */
+
+sync_fifo  #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH)) ASYNC_DUT (.clk(axi_clk),
+                                                                          .rst(check_rstn),
+                                                                          .r_en(r_enable),
+                                                                          .w_en(word_packed_done),
+                                                                          .data_in(word_out),
+                                                                          .data_out(async_out),
+                                                                          .full(word_full),
+                                                                          .empty(async_empty));
 
   axi AXI_DUT(.axi_clk(axi_clk),
               .rstn(check_rstn),
@@ -263,7 +274,8 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
           .ddr_cfg_seq_start	(ddr_cfg_seq_start),
           .ddr_init_done(axi_start)
 );
-                                                                        
+
+/*                                                                        
   sync_fifo #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH*5)) RECEIVE_SYNC_FIFO_DUT (.clk(axi_clk),
                                                                           .rst(check_rstn),
                                                                           .r_en(receive_sync_r_enable),
@@ -299,6 +311,8 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
            .o_Tx_Active(uart_tx_active),
            .o_Tx_Serial( ),
            .o_Tx_Done(uart_tx_done));
+           
+           */
                              
 
 assign ddr_start = axi_start;

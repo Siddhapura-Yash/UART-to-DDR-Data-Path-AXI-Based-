@@ -56,23 +56,29 @@ module axi(
 );
 
 //will fetch data from word fifo
-assign read_enable = (!check_empty && states == 4'b0011 && wready) == 1? 1 : 0;
+//assign read_enable = (!check_empty) == 1? 1 : 0;
+//assign read_enable =  wready && !check_empty;
+assign read_enable = wready && !check_empty;
+reg [255:0]fetch_data;
 
-reg [255:0]async_data;
+
+
 
 always@(posedge axi_clk or negedge rstn) begin
     if(!rstn) begin
-        async_data <= 'b0;
-    end
+        fetch_data <= 'b0;
+    end 
     else begin
         if(read_enable) begin
-            async_data <= data_in;
+            fetch_data <= data_in;
         end
         else begin
-            async_data <= async_data;
+            fetch_data <= fetch_data;
         end
+    
     end
 end
+
 
 
 assign aid = 8'h00;
@@ -212,32 +218,31 @@ always @(posedge axi_clk or negedge rstn) begin
 			avalid <= 1'b0;
 			atype <= 1'b0;
 			wvalid <= 1'b1;
-			wdata <= "Data is send from PRE_WRITE state";   //data doesn't send from this module
+			wdata <= fetch_data;
 			bready <= 1'b1;
-			write_cnt <= write_cnt - 1;
+		  write_cnt <= write_cnt - 1;
             end
         if (states == WRITE) begin
-              //  if (wready == 1'b1 && read_enable == 1'b0) begin
-               if (wready == 1'b1) begin
-                    //wdata <= "DAta is send from WRITE state";
-                    
-                   wdata <= async_data;
-                    if (write_cnt == 9'd0) begin
-                    wburst_done <= 1'b1;
-                    wlast <= 1'b0;
-                    wvalid <= 1'b0;
-                        if (aaddr >= STOP_ADDR) begin
-                        write_done <= 1'b1;
-                        end else begin
-                        write_done <= 1'b0;
-                        end
-                    end if (write_cnt == 9'd1) begin
-                        wlast <= 1'b1;
-                        write_cnt <= write_cnt - 1;
-                    end else begin
-                    write_cnt <= write_cnt - 1;
-                    end
-                end
+                // if (wready == 1'b1 && read_enable == 1'b1) begin
+                if (wready == 1'b1 && wvalid) begin
+                    wdata <= fetch_data;
+                    write_cnt <= write_cnt - 1'b1;
+                        if (write_cnt == 9'd0) begin
+                        wburst_done <= 1'b1;
+                        wlast <= 1'b0;
+                        wvalid <= 1'b0;
+                                if (aaddr >= STOP_ADDR) begin
+                                write_done <= 1'b1;
+                                end 
+                                else begin
+                                write_done <= 1'b0;
+                                end
+                        end 
+                        else if (write_cnt == 9'd1) begin
+                                wlast <= 1'b1;
+                              write_cnt <= write_cnt - 1;
+                         end 
+                   end
             end
             if (states == POST_WRITE) begin
                 if (write_done) begin
