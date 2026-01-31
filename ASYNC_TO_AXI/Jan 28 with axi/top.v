@@ -129,13 +129,13 @@ reg axi_start_reg;
     wire receive_sync_full;
     wire receive_sync_empty; 
     
-    //assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
-    assign receive_sync_enable = (rvalid && rready && !receive_sync_full);
+    assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
+    //assign receive_sync_enable = (rvalid && rready && !receive_sync_full);
 
     //depacker signals
     wire depacker_w_enable;
     wire [TB_DATA_WIDTH-1:0]depacker_out;
-    wire check_byte_full;    
+    wire check_byte_full = 0;    
     wire uart_byte_empty;    
     
     //signals which are used between uart byte fifo and uart tx
@@ -275,7 +275,7 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
           .ddr_init_done(axi_start)
 );
 
-/*                                                                        
+                                                                        
   sync_fifo #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH*5)) RECEIVE_SYNC_FIFO_DUT (.clk(axi_clk),
                                                                           .rst(check_rstn),
                                                                           .r_en(receive_sync_r_enable),
@@ -284,7 +284,7 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
                                                                           .data_out(receive_sync_out),
                                                                           .full(receive_sync_full),
                                                                           .empty(receive_sync_empty));
-                                                                          
+    /*                                                                      
    depacker #(.WORD_WIDTH(TB_WORD_WIDTH)) DEPACKER_DUT(.clk(axi_clk),
                                                        .rst(check_rstn),
                                                        .data_in(receive_sync_out),

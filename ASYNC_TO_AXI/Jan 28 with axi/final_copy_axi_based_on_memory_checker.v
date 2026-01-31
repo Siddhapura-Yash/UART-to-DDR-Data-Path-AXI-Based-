@@ -275,7 +275,7 @@ always @(posedge axi_clk or negedge rstn) begin
                 rready <= 1'b1;
                 if (read_cnt != 9'd0) begin
                 if (rvalid == 1'b1) begin
-                            rdata_store <= {aaddr, ~aaddr, {8{~read_cnt[7:0]}},~aaddr,aaddr,{8{read_cnt[7:0]}}};
+                rdata_store <= rdata;
                 read_cnt <= read_cnt - 1'b1;
                     if (rdata != rdata_store) begin
                         fail <= 1'b1;
