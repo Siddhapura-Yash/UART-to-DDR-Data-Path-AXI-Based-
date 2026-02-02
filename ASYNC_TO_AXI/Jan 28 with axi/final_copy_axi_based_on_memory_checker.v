@@ -8,7 +8,7 @@ module axi(
 
     input [255:0] data_in,      //data will come from fifo
     input check_empty,          //empty signal from async fifo
-    output read_enable,         //axi send read enable to the async fifo
+    output reg read_enable,         //axi send read enable to the async fifo
 
     //Write address channel signals
     output [7:0] aid,           //transaction id
@@ -58,9 +58,20 @@ module axi(
 //will fetch data from word fifo
 //assign read_enable = (!check_empty) == 1? 1 : 0;
 //assign read_enable =  wready && !check_empty;
-assign read_enable = wready && !check_empty;
+
+//assign read_enable = wready && !check_empty;
 reg [255:0]fetch_data;
 
+
+always@(posedge axi_clk or negedge rstn) begin
+    if(!rstn) begin
+    read_enable <= 'b0;
+    end
+    else begin
+        read_enable <= wready && !check_empty;
+    end
+
+end 
 
 
 
@@ -85,7 +96,7 @@ assign aid = 8'h00;
 assign wstrb = 32'hFFFFFFFF;
 assign wid = 8'h00;
 
-parameter ALEN = 7;
+parameter ALEN = 23;
 parameter ASIZE = 5;
 parameter START_ADDR = 32'h00000000; 
 parameter STOP_ADDR = 32'h07FFFE00;
@@ -218,14 +229,14 @@ always @(posedge axi_clk or negedge rstn) begin
 			avalid <= 1'b0;
 			atype <= 1'b0;
 			wvalid <= 1'b1;
-			wdata <= fetch_data;
+			wdata <= data_in;
 			bready <= 1'b1;
 		  write_cnt <= write_cnt - 1;
             end
         if (states == WRITE) begin
-                // if (wready == 1'b1 && read_enable == 1'b1) begin
                 if (wready == 1'b1 && wvalid) begin
-                    wdata <= fetch_data;
+                //if (wready == 1'b1 ) begin
+                    wdata <= data_in;
                     write_cnt <= write_cnt - 1'b1;
                         if (write_cnt == 9'd0) begin
                         wburst_done <= 1'b1;

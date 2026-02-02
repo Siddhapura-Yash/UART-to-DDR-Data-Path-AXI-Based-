@@ -196,7 +196,7 @@ reg axi_start_reg;
                                                                                             
      // assign led = (rx_done) ? 1'b1 : 1'b0;
   
-  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH)) SYNC_FIFO_DUT (.clk(axi_clk),
+  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*256)) SYNC_FIFO_DUT (.clk(axi_clk),
                                                                           .rst(check_rstn),
                                                                           .r_en(packer_ren),
                                                                           .w_en(tb_wen),
