@@ -3,7 +3,8 @@
 
 module top#(  parameter TB_DATA_WIDTH = 8,
               parameter TB_CLK_FREQ = 80_000_000,  //100 MHz
-              parameter TB_BAUD_RATE = 115200,
+            //  parameter TB_BAUD_RATE = 115200,
+              parameter TB_BAUD_RATE = 250000,      //for testing
               parameter TB_DEPTH = 8,
               parameter TB_WORD_WIDTH = 256) 
               (//input tb_clk,
@@ -310,14 +311,42 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
                                                                             
 
     wire byte_valid;
-    assign byte_valid = !uart_byte_empty;
+    assign byte_valid = !uart_byte_empty && !uart_tx_active && !uart_tx_done;
+    
+ /*   always@(posedge axi_clk or negedge check_rstn) begin
+        if(!check_rstn) begin
+            byte_valid <= 1'b0;
+        end
+        else begin
+        byte_valid <= 1'b0;
+            if(!uart_byte_empty && !uart_tx_active) begin
+                byte_valid <= 1'b1;
+            end
+        end
+    end     */
+    
+ /* reg tx_start = 0;
+    always@(posedge axi_clk or negedge check_rstn) begin
+        if(!check_rstn) begin
+            tx_start <= 1'b0;
+        end
+        else begin
+        tx_start <= 1'b0;
+            if(byte_valid) begin
+                tx_start <= 1'b1;
+            end
+        end
+    end     */
+    wire tx_start;
+    assign tx_start = byte_valid;
+ //  assign byte_valid = !uart_byte_empty && !uart_tx_active;
     
   uart_tx UART_TX_DUT(.i_Clock(axi_clk),
-           .i_Tx_DV(byte_valid),
+           .i_Tx_DV(tx_start),
            .i_Tx_Byte(uart_byte_fifo_out),
            .o_Tx_Active(uart_tx_active),
            .o_Tx_Serial(TX_PIN),
-           .o_Tx_Done(uart_tx_done));
+           .o_Tx_Done(uart_tx_done));   
            
            
 reg axi_enable;
