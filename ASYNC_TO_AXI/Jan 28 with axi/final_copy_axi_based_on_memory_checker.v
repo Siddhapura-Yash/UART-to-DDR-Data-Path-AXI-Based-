@@ -9,7 +9,9 @@ module axi(
     input [255:0] data_in,      //data will come from fifo
     input check_empty,          //empty signal from async fifo
     output reg read_enable,         //axi send read enable to the async fifo
-
+    
+    input async_full,   //will come from word fifo we will not start transaction untill it fully loaded with data
+    
     //Write address channel signals
     output [7:0] aid,           //transaction id
     output reg [31:0] aaddr,    //main address
@@ -52,7 +54,10 @@ module axi(
     output reg [255:0] obs_rdata_exp,
     output reg [255:0] obs_rdata_det,
 
-    output [3:0]o_states
+    output [3:0]o_states,
+    
+    output reg [255:0]receive_sync_fifo_data,
+    output reg receive_sync_fifo_enable
 );
 
 //will fetch data from word fifo
@@ -61,16 +66,24 @@ module axi(
 
 //assign read_enable = wready && !check_empty;
 reg [255:0]fetch_data;
+reg async_full_reg;
 
+always@(posedge axi_clk or negedge rstn) begin
+    if(!rstn) begin
+        async_full_reg <= 1'b0;
+    end
+    else if(async_full)begin
+        async_full_reg <= 1'b1;
+    end
+end
 
 always@(posedge axi_clk or negedge rstn) begin
     if(!rstn) begin
     read_enable <= 'b0;
     end
-    else begin
-        read_enable <= wready && !check_empty;
+    else if(async_full_reg) begin
+        read_enable <= wready && !check_empty;  //should read when wvalid is also HIGH
     end
-
 end 
 
 
@@ -127,7 +140,7 @@ localparam
         if (!rstn) begin
             start_sync <= 2'b00;
         end else begin
-            start_sync[0] <= start;
+            start_sync[0] <= async_full_reg;
             start_sync[1] <= start_sync[0];
         end
     end
@@ -140,9 +153,9 @@ localparam
         end
     end
 
-always @(states or start_sync[1] or write_cnt or rburst_done or write_done or read_done or bvalid_done or aready) begin
+always @(states or async_full_reg or write_cnt or rburst_done or write_done or read_done or bvalid_done or aready) begin
 	case(states) 
-	IDLE 	   : if (start_sync[1]) 			nstates = WRITE_ADDR;
+	IDLE 	   : if (async_full_reg) 			nstates = WRITE_ADDR;
 	             else					nstates = IDLE;
 	WRITE_ADDR : if (aready)				nstates = PRE_WRITE;
 		     else					nstates = WRITE_ADDR;
@@ -237,7 +250,6 @@ always @(posedge axi_clk or negedge rstn) begin
                 if (wready == 1'b1 && wvalid) begin
                 //if (wready == 1'b1 ) begin
                     wdata <= data_in;
-                    write_cnt <= write_cnt - 1'b1;
                         if (write_cnt == 9'd0) begin
                         wburst_done <= 1'b1;
                         wlast <= 1'b0;
@@ -253,6 +265,9 @@ always @(posedge axi_clk or negedge rstn) begin
                                 wlast <= 1'b1;
                               write_cnt <= write_cnt - 1;
                          end 
+                         else begin
+                            write_cnt <= write_cnt - 1'b1;
+                         end
                    end
             end
             if (states == POST_WRITE) begin
@@ -284,22 +299,25 @@ always @(posedge axi_clk or negedge rstn) begin
             end
             if (states == READ_COMPARE) begin
                 rready <= 1'b1;
+                receive_sync_fifo_enable <= 1'b0;
                 if (read_cnt != 9'd0) begin
-                if (rvalid == 1'b1) begin
-                rdata_store <= rdata;
-                read_cnt <= read_cnt - 1'b1;
-                    if (rdata != rdata_store) begin
-                        fail <= 1'b1;
-                        obs_rdata_exp <= rdata_store;
-                        obs_rdata_det <= rdata;
-                        `ifdef EFX_SIM
-                        $display("ERROR!! Read mismatch : read = 0x%x, expected = 0x%x",rdata,rdata_store);
-                        `endif 
-                    end else begin
-                        `ifdef EFX_SIM
-                        $display("Read match: read = 0x%x, expected = 0x%x",rdata,rdata_store);
-                        `endif
-                    end
+                    if (rvalid == 1'b1) begin
+                    rdata_store <= rdata;
+                    receive_sync_fifo_data <= rdata;
+                    receive_sync_fifo_enable <= 1'b1;
+                    read_cnt <= read_cnt - 1'b1;
+                        if (rdata != rdata_store) begin
+                            fail <= 1'b1;
+                            obs_rdata_exp <= rdata_store;
+                            obs_rdata_det <= rdata;
+                            `ifdef EFX_SIM
+                            $display("ERROR!! Read mismatch : read = 0x%x, expected = 0x%x",rdata,rdata_store);
+                            `endif 
+                        end else begin
+                            `ifdef EFX_SIM
+                            $display("Read match: read = 0x%x, expected = 0x%x",rdata,rdata_store);
+                            `endif
+                        end
         
                 end
                 end
@@ -333,9 +351,11 @@ always @(posedge axi_clk or negedge rstn) begin
             if (states == POST_READ) begin
                 aaddr <= aaddr + ADDR_OFFSET;
                 rready <= 1'b1;
+                receive_sync_fifo_enable <= 1'b0;
             end
             if (states == DONE) begin
                 done <= 1'b1;
+                receive_sync_fifo_enable <= 1'b0;
             end
         end
 

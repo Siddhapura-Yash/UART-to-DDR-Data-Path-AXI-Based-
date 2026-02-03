@@ -129,23 +129,19 @@ reg axi_start_reg;
     wire receive_sync_full;
     wire receive_sync_empty; 
     
-    assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
+    //assign receive_sync_enable = (rvalid && !receive_sync_full) == 1'b1 ? 1 : 0;
     //assign receive_sync_enable = (rvalid && rready && !receive_sync_full);
 
     //depacker signals
     wire depacker_w_enable;
     wire [TB_DATA_WIDTH-1:0]depacker_out;
-    wire check_byte_full = 0;    
+    wire check_byte_full;    
     wire uart_byte_empty;    
     
     //signals which are used between uart byte fifo and uart tx
     wire [TB_DATA_WIDTH-1 : 0]uart_byte_fifo_out;
     wire uart_tx_active;
     wire uart_tx_done;
-    wire byte_enable;
-    assign byte_enable = !uart_tx_active && uart_tx_done && !uart_byte_empty;
-    wire byte_valid;
-    assign byte_valid = byte_enable;
 
     
 
@@ -226,7 +222,7 @@ reg axi_start_reg;
                                                                         .empty(async_empty));
  */
 
-sync_fifo  #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH)) ASYNC_DUT (.clk(axi_clk),
+sync_fifo  #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH*2)) ASYNC_DUT (.clk(axi_clk),
                                                                           .rst(check_rstn),
                                                                           .r_en(r_enable),
                                                                           .w_en(word_packed_done),
@@ -236,6 +232,7 @@ sync_fifo  #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH)) ASYNC_DUT (.clk(axi_cl
                                                                           .empty(async_empty));
 
   axi AXI_DUT(.axi_clk(axi_clk),
+              .async_full(word_full),
               .rstn(check_rstn),
               .start(axi_start_reg),
               .data_in(async_out),
@@ -264,8 +261,12 @@ sync_fifo  #(.DATA_WIDTH(TB_WORD_WIDTH),.DEPTH(TB_DEPTH)) ASYNC_DUT (.clk(axi_cl
               .rresp(rresp),
               .bid(bid),
               .bvalid(bvalid),
-              .bready(bready));
-
+              .bready(bready),
+              .receive_sync_fifo_data(axi_data_out),
+              .receive_sync_fifo_enable(receive_sync_enable) );
+                    
+wire [255:0]axi_data_out;
+              
 ddr_reset_sequencer ddr_reset_sequencer_inst (
           .ddr_rstn_i		(ddr_rstn),
           .clk		(axi_clk),
@@ -280,11 +281,11 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
                                                                           .rst(check_rstn),
                                                                           .r_en(receive_sync_r_enable),
                                                                           .w_en(receive_sync_enable),
-                                                                          .data_in(rdata),
+                                                                          .data_in(axi_data_out),
                                                                           .data_out(receive_sync_out),
                                                                           .full(receive_sync_full),
                                                                           .empty(receive_sync_empty));
-    /*                                                                      
+                                                                     
    depacker #(.WORD_WIDTH(TB_WORD_WIDTH)) DEPACKER_DUT(.clk(axi_clk),
                                                        .rst(check_rstn),
                                                        .data_in(receive_sync_out),
@@ -292,30 +293,47 @@ ddr_reset_sequencer ddr_reset_sequencer_inst (
                                                        .byte_full(check_byte_full),
                                                        .read_enable(receive_sync_r_enable),
                                                        .data_out(depacker_out),
-                                                       .write_enable(depacker_w_enable));
+                                                       .write_enable(depacker_w_enable),
+                                                       .uart_byte_empty(uart_byte_empty),
+                                                       .valid(valid));
 
 
-  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*8)) UART_BYTE_FIFO(.clk(axi_clk),
+  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*256)) UART_BYTE_FIFO(.clk(axi_clk),
                                                                             .rst(check_rstn),
-                                                                            .r_en(byte_enable),
+                                                                            .r_en(byte_valid),
                                                                             .w_en(depacker_w_enable),
                                                                             .data_in(depacker_out),
                                                                             .data_out(uart_byte_fifo_out),
                                                                             .full(check_byte_full),
-                                                                            .empty(uart_byte_empty));
+                                                                            .empty(uart_byte_empty)
+                                                                            );
                                                                             
-              
+
+    wire byte_valid;
+    assign byte_valid = !uart_byte_empty;
+    
   uart_tx UART_TX_DUT(.i_Clock(axi_clk),
            .i_Tx_DV(byte_valid),
            .i_Tx_Byte(uart_byte_fifo_out),
            .o_Tx_Active(uart_tx_active),
-           .o_Tx_Serial( ),
+           .o_Tx_Serial(TX_PIN),
            .o_Tx_Done(uart_tx_done));
            
-           */
-                             
+           
+reg axi_enable;
+reg waste = 0;
+
+always@(posedge axi_clk or negedge check_rstn) begin
+if(!check_rstn) begin
+    axi_enable <= 'b0;
+end
+else if(word_packed_done && waste == 0) begin
+    axi_enable <= 1'b1;
+    waste <= waste + 1'b1;
+end
+end             
 
 assign ddr_start = axi_start;
-assign axi_start_reg = word_packed_done;
-
+//assign axi_start_reg = word_packed_done;
+assign axi_start_reg = axi_enable;
 endmodule
