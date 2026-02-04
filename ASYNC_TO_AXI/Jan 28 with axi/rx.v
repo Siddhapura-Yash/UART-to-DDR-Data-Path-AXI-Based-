@@ -4,8 +4,8 @@
 // (100000000)/(115200) = 868
 //>>>>>>> 3cf4772 (UART implementation on Vaaman)
  
-//`define CLKS_PER_BIT 694
-`define CLKS_PER_BIT 320
+`define CLKS_PER_BIT 694
+//`define CLKS_PER_BIT 320
 module rx (
    input        i_Clock,
    input        i_Rx_Serial,

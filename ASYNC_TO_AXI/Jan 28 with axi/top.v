@@ -4,7 +4,7 @@
 module top#(  parameter TB_DATA_WIDTH = 8,
               parameter TB_CLK_FREQ = 80_000_000,  //100 MHz
             //  parameter TB_BAUD_RATE = 115200,
-              parameter TB_BAUD_RATE = 250000,      //for testing
+           //   parameter TB_BAUD_RATE = 250000,      //for testing
               parameter TB_DEPTH = 8,
               parameter TB_WORD_WIDTH = 256) 
               (//input tb_clk,
@@ -193,7 +193,7 @@ reg axi_start_reg;
                                                                                             
      // assign led = (rx_done) ? 1'b1 : 1'b0;
   
-  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*256)) SYNC_FIFO_DUT (.clk(axi_clk),
+  sync_fifo #(.DATA_WIDTH(TB_DATA_WIDTH),.DEPTH(TB_DEPTH*64)) SYNC_FIFO_DUT (.clk(axi_clk),
                                                                           .rst(check_rstn),
                                                                           .r_en(packer_ren),
                                                                           .w_en(tb_wen),

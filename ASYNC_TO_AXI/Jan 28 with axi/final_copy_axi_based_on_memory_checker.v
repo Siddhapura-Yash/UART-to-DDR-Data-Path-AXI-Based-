@@ -76,30 +76,37 @@ always@(posedge axi_clk or negedge rstn) begin
         async_full_reg <= 1'b1;
     end
 end
-
+/*
 always@(posedge axi_clk or negedge rstn) begin
     if(!rstn) begin
     read_enable <= 'b0;
     end
-    else if(async_full_reg) begin
-        read_enable <= wready && !check_empty;  //should read when wvalid is also HIGH
+    else if(async_full_reg && wready) begin
+     //   read_enable <= wready && !check_empty;  //should read when wvalid is also HIGH
+      read_enable <= 1'b0; 
+       if(wready && !check_empty) begin
+            read_enable <= 1'b1;
+        end
     end
-end 
+end */
+assign read_enable = wready && !check_empty && async_full_reg;
 
+//assign fetch_data = data_in;  
 
+//wire temp_read_enable;
+//assign temp_read_enable = read_enable;
 
 always@(posedge axi_clk or negedge rstn) begin
     if(!rstn) begin
         fetch_data <= 'b0;
     end 
     else begin
-        if(read_enable) begin
+        if(wready) begin
             fetch_data <= data_in;
         end
         else begin
             fetch_data <= fetch_data;
-        end
-    
+        end 
     end
 end
 
@@ -109,7 +116,7 @@ assign aid = 8'h00;
 assign wstrb = 32'hFFFFFFFF;
 assign wid = 8'h00;
 
-parameter ALEN = 15;
+parameter ALEN = 16;
 parameter ASIZE = 5;
 parameter START_ADDR = 32'h00000000; 
 parameter STOP_ADDR = 32'h07FFFE00;
@@ -242,14 +249,14 @@ always @(posedge axi_clk or negedge rstn) begin
 			avalid <= 1'b0;
 			atype <= 1'b0;
 			wvalid <= 1'b1;
-			wdata <= data_in;
+			wdata <= fetch_data;
 			bready <= 1'b1;
 		  write_cnt <= write_cnt - 1;
             end
         if (states == WRITE) begin
                 if (wready == 1'b1 && wvalid) begin
                 //if (wready == 1'b1 ) begin
-                    wdata <= data_in;
+                    wdata <= fetch_data;
                         if (write_cnt == 9'd0) begin
                         wburst_done <= 1'b1;
                         wlast <= 1'b0;
