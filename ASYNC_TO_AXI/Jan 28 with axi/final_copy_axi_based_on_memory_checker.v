@@ -116,10 +116,10 @@ assign aid = 8'h00;
 assign wstrb = 32'hFFFFFFFF;
 assign wid = 8'h00;
 
-parameter ALEN = 16;
+parameter ALEN = 23;
 parameter ASIZE = 5;
 parameter START_ADDR = 32'h00000000; 
-parameter STOP_ADDR = 32'h07FFFE00;
+parameter STOP_ADDR = 32'h00100000;
 parameter ADDR_OFFSET = (ALEN + 1)*32;
 
 
@@ -261,17 +261,19 @@ always @(posedge axi_clk or negedge rstn) begin
                         wburst_done <= 1'b1;
                         wlast <= 1'b0;
                         wvalid <= 1'b0;
-                                if (aaddr >= STOP_ADDR) begin
+                        write_done <= 1'b1;
+                   //     write_cnt <= write_cnt - 1'b1;
+                             /*   if (aaddr >= STOP_ADDR) begin
                                 write_done <= 1'b1;
                                 end 
                                 else begin
                                 write_done <= 1'b0;
-                                end
+                                end */
                         end 
                         else if (write_cnt == 9'd1) begin
                                 wlast <= 1'b1;
                               write_cnt <= write_cnt - 1;
-                         end 
+                         end    
                          else begin
                             write_cnt <= write_cnt - 1'b1;
                          end
