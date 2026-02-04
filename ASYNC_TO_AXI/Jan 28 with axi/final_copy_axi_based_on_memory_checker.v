@@ -116,10 +116,10 @@ assign aid = 8'h00;
 assign wstrb = 32'hFFFFFFFF;
 assign wid = 8'h00;
 
-parameter ALEN = 23;
+parameter ALEN = 16;
 parameter ASIZE = 5;
 parameter START_ADDR = 32'h00000000; 
-parameter STOP_ADDR = 32'h00100000;
+parameter STOP_ADDR =  32'h000001FF;
 parameter ADDR_OFFSET = (ALEN + 1)*32;
 
 
@@ -333,7 +333,8 @@ always @(posedge axi_clk or negedge rstn) begin
                 if (read_cnt == 9'd0) begin
                                 receive_sync_fifo_enable <= 1'b0;
                                 if (rvalid == 1'b1) begin
-                                        if (rdata != rdata_store) begin
+                               //     read_done <= 1'b1;
+                                            if (rdata != rdata_store) begin
                                                     fail <= 1'b1;
 
                                                     obs_rdata_exp <= rdata_store;
@@ -353,7 +354,7 @@ always @(posedge axi_clk or negedge rstn) begin
                             read_done <= 1'b1;
                         end else begin
                             read_done <= 1'b0;
-                        end
+                        end  
                         rburst_done <= 1'b1;
                                         receive_sync_fifo_enable <= 1'b0;
                     end
