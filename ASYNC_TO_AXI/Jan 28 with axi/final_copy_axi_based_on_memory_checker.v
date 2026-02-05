@@ -162,7 +162,7 @@ localparam
 
 always @(states or async_full_reg or write_cnt or rburst_done or write_done or read_done or bvalid_done or aready) begin
 	case(states) 
-	IDLE 	   : if (async_full_reg) 			nstates = WRITE_ADDR;
+	IDLE 	   : if (async_full_reg && !done) 			nstates = WRITE_ADDR;
 	             else					nstates = IDLE;
 	WRITE_ADDR : if (aready)				nstates = PRE_WRITE;
 		     else					nstates = WRITE_ADDR;
@@ -355,6 +355,7 @@ always @(posedge axi_clk or negedge rstn) begin
                         end else begin
                             read_done <= 1'b0;
                         end  
+                        read_done <= 1'b1;
                         rburst_done <= 1'b1;
                                         receive_sync_fifo_enable <= 1'b0;
                     end
