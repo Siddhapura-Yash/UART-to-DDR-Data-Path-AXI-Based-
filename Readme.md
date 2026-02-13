@@ -1,9 +1,6 @@
 # AXI UART DDR Loopback
 
-This project implements a **UART-to-DDR loopback data pipeline** using **Verilog RTL**. 
-It safely transfers low-speed serial data into high-speed DDR memory and reads it back using FIFOs and an AXI interface.
-=======
-This repository implements a UART to DDR memory loopback pipeline using Verilog RTL.
+This repository implements a UART to DDR memory loopback pipeline using Verilog RTL.  
 The design safely transfers low-speed serial UART data into high-speed DDR memory using FIFOs, byte-to-word packing, and an AXI interface, then reads the data back and transmits it over UART.
 
 The system demonstrates reliable clock-domain crossing, data width adaptation, and high-throughput memory transactions using AXI.
@@ -12,10 +9,6 @@ The system demonstrates reliable clock-domain crossing, data width adaptation, a
 
 ## System Description
 
-The complete loopback path is shown below:
-
-UART → Byte FIFO → Packer → Word FIFO → AXI → DDR → AXI → Word FIFO → Depacker → Byte FIFO → UART
-=======
 The design receives serial data from a UART interface, buffers it, and converts the byte-wide stream into wide memory words suitable for DDR access.  
 These words are written into DDR memory through an AXI interface.  
 During the readback phase, the data is fetched from DDR, unpacked into bytes, and transmitted back through the UART.
@@ -26,47 +19,6 @@ This architecture enables safe and efficient transfer between low-speed serial i
 
 ## Repository Structure
 
-
-- **UART:** Receives and sends serial data one byte at a time.  
-- **Byte FIFO:** Stores incoming and outgoing 8-bit UART data and handles speed differences.  
-- **Packer:** Combines multiple bytes into a wide word (e.g., 128-bit) for DDR writing.  
-- **Word FIFO:** Stores packed wide words and allows efficient burst transfers.  
-- **AXI Interface:** Manages read and write operations between FIFOs and DDR using handshake signals.  
-- **DDR Memory:** High-capacity memory that stores the data and returns it during readback.  
-- **Depacker:** Converts wide DDR words back into 8-bit data for UART transmission.
-  
----
-
-## Hardware Verification
-
-The complete loopback system was **verified on the physical Vaaman FPGA board with onboard DDR**, not just in simulation.
-
----
-
-## Challenges Faced
-
-### 1. DDR Reset Sequencing
-The DDR controller required a strict reset order and timing.  
-Incorrect sequencing prevented proper initialization.
-
-### 2. AXI Handshake Issues
-Initial read/write transactions were not completing.  
-Fixed by correctly managing valid/ready handshake signals.
-
-### 3. Data Alignment Between Packer and AXI
-Misalignment caused incorrect DDR writes.  
-Resolved by fixing packer counters and word boundaries.
-
-### 4. Simulation vs Hardware Behavior
-The design worked in simulation but failed on hardware initially.  
-Issues were traced to reset timing and handshake logic.
-
----
-
-
-## Note
-The AXI DDR interface was based on a vendor reference example; all other modules and system integration were implemented in this project.
-=======
 axi-uart-ddr-loopback/
 
 - UART_RX/ : UART receiver module
@@ -159,7 +111,7 @@ Inspect waveforms to verify UART reception, FIFO transfers, packing, AXI transac
 
 ![AXI UART DDR Loopback Simulation](docs/loopback_waveform.png)
 
-The waveform confirms correct UART reception, data packing, AXI memory transactions, and successful loopback of the original byte stream.
+The design was also validated on hardware using the Vicharak Vaaman FPGA board with onboard DDR memory, confirming correct end-to-end UART to DDR loopback operation.
 
 ---
 
@@ -169,13 +121,3 @@ The waveform confirms correct UART reception, data packing, AXI memory transacti
 2. Apply correct DDR reset sequencing.
 3. Configure UART baud rate and system clocks.
 4. Program the FPGA and test loopback through the UART interface.
-
----
-
-## Applications
-
-- UART-based data logging to memory
-- Embedded debugging interfaces
-- High-throughput serial capture systems
-- FPGA communication bridges
-
